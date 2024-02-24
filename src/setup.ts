@@ -5,6 +5,17 @@ import qrcode from 'qrcode-terminal';
 import { findOrCreateProfile } from './models/profile';
 import { createAuthAttempt } from './models/authAttempt';
 
+// import { safeId } from './util/safeId';
+// import Bonjour from 'bonjour-service';
+// const serverId = safeId();
+// const instance = new Bonjour();
+// // advertise an HTTP server on port 3000
+// instance.publish({
+//   name: 'My Web Server - ' + serverId,
+//   type: 'photobackapp',
+//   port: 3000,
+// });
+
 const setup = async () => {
   const { username } = await enquirer.prompt<{ username: string }>({
     type: 'input',
