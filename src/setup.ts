@@ -5,16 +5,18 @@ import qrcode from 'qrcode-terminal';
 import { findOrCreateProfile } from './models/profile';
 import { createAuthAttempt } from './models/authAttempt';
 
-// import { safeId } from './util/safeId';
-// import Bonjour from 'bonjour-service';
-// const serverId = safeId();
-// const instance = new Bonjour();
-// // advertise an HTTP server on port 3000
-// instance.publish({
-//   name: 'My Web Server - ' + serverId,
-//   type: 'photobackapp',
-//   port: 3000,
-// });
+import { safeId } from './util/safeId';
+import { Advertisement } from '@astronautlabs/mdns';
+const serverId = safeId();
+
+const ad = new Advertisement('_photobackapp._tcp', 3000, {
+  name: 'PhotoBack ' + serverId,
+  txt: {
+    id: serverId,
+  },
+});
+ad.start();
+// advertise an HTTP server on port 3000
 
 const setup = async () => {
   const { username } = await enquirer.prompt<{ username: string }>({
@@ -37,4 +39,7 @@ setup()
   })
   .catch((error) => {
     console.error(colors.red(error));
+  })
+  .finally(() => {
+    ad.stop();
   });

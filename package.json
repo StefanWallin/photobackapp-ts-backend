@@ -49,7 +49,9 @@
     "koa": "^2.14.1",
     "koa-bodyparser": "^4.3.0",
     "koa-pino-logger": "^4.0.0",
+    "mdns": "^2.7.2",
     "nanoid": "^5.0.6",
-    "qrcode-terminal": "^0.12.0"
+    "qrcode-terminal": "^0.12.0",
+    "zod": "^3.22.4"
   }
 }
