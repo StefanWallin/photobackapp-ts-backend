@@ -1,36 +1,39 @@
-import express, { Application } from 'express';
-import http from 'http';
-import { tryListen } from './tryListen';
-import systemRouter from './routes/system';
+import getConfigContext from '../contexts/ConfigContext';
+import { logError, logInfo } from '../util/logger';
+import getLifeCycleContext from '../contexts/LifecycleContext';
+import { createServer } from '../app';
 
-const app = express();
+const app = createServer();
 
-type Result =
-  | { status: 'success'; port: number; close: () => void }
-  | { status: 'busy' };
-
-export const setupServer = (): Promise<Result> => {
+export const setupServer = async (): Promise<boolean> => {
   return new Promise((resolve) => {
-    tryListen()
-      .then((port) => {
-        const server = http.createServer(app);
-        server.on('error', (error) => {
-          console.error(`Error in server: ${error.message}`);
-          process.exit(1);
-        });
-        app.use('/', systemRouter);
-        server.listen(port, () => {
-          resolve({
-            status: 'success',
-            port,
-            close: server.close.bind(server),
-          });
-          console.log(`Server is running on port ${port}`);
-        });
-      })
-      .catch((error) => {
-        console.error('Error in tryListen: ', error);
-        process.exit(1);
-      });
+    const lifecycleContext = getLifeCycleContext();
+    const confContext = getConfigContext();
+    const { port } = confContext.getConfig();
+    const server = app.listen(port);
+    let resolved = false;
+    server.on('error', (error) => {
+      logError(
+        'Error starting api server: ',
+        error,
+        JSON.stringify({ port }, null, 2)
+      );
+      if (!resolved) {
+        resolved = true;
+        resolve(false);
+      }
+      lifecycleContext.trigger('apiOnError', error);
+    });
+    server.on('listening', () => {
+      if (!resolved) {
+        resolved = true;
+        resolve(true);
+      }
+      lifecycleContext.trigger('apiOnListening', port);
+    });
+    server.on('close', () => {
+      logInfo('API server closed');
+      lifecycleContext.trigger('apiOnClose');
+    });
   });
 };

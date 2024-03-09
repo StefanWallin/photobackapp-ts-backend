@@ -24,6 +24,7 @@
     "@types/koa__router": "12.0.0",
     "@types/koa-bodyparser": "4.3.10",
     "@types/koa-pino-logger": "3.0.1",
+    "@types/mdns": "^0.0.38",
     "@types/node": "^20.11.20",
     "@types/qrcode-terminal": "^0.12.2",
     "@types/supertest": "2.0.12",

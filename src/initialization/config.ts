@@ -1,11 +1,11 @@
 import { z } from 'zod';
-import colors from 'colors/safe';
 import path from 'path';
+import os from 'node:os';
 
 import { safeId } from '../util/safeId';
-import { checkFilepath, readFile, writeFile } from '../util/file';
-
-const ServerConfigFilePath = ['.photobackapp.config'];
+import { readFile, writeFile } from '../util/file';
+import { logError, logInfo, logWarn } from '../util/logger';
+import { AllowedPorts, ServerConfigFilePath } from '../config/config';
 
 export type ServerConfig = {
   libraryPath?: string;
@@ -15,11 +15,13 @@ export type ServerConfig = {
   serverId: string;
 };
 
-export const AllowedPorts = [5891, 5892, 5893, 5894, 5895, 5896];
+const hostname = () => {
+  return os.hostname().replace('.local', '');
+};
 
 export const ServerConfigZodSchema = z.object({
   libraryPath: z.string().optional(),
-  hostname: z.string().default('localhost'),
+  hostname: z.string().default(hostname()),
   port: z
     .number()
     .refine((arg: number) => {
@@ -36,16 +38,17 @@ const filePath = (libraryPath: string) =>
 export const readServerConfig = async (libraryPath: string) => {
   const path = filePath(libraryPath);
   try {
-    console.log(colors.cyan(' --> Reading server config: '), colors.dim(path));
+    logInfo('Reading server config: ', path);
     const fileContents = await readFile(path);
     const parsedContents = JSON.parse(fileContents);
-    const config = await ServerConfigZodSchema.parse(parsedContents);
+    const config = await ServerConfigZodSchema.parse({
+      libraryPath,
+      ...parsedContents,
+    });
     return config satisfies ServerConfig;
   } catch (error) {
-    console.warn(
-      colors.yellow(' -!- Generating new server config: '),
-      colors.dim(path)
-    );
+    logError('Error reading server config: ', error);
+    logWarn('Generating new server config: ', path);
     const config = ServerConfigZodSchema.parse({ libraryPath });
     return config satisfies ServerConfig;
   }
@@ -55,10 +58,15 @@ export const writeServerConfig = async (
   libraryPath: string,
   config: ServerConfig
 ) => {
-  const filePath = [libraryPath, ...ServerConfigFilePath].join(path.sep);
-  console.log(
-    colors.cyan(' --> Writing server config: '),
-    colors.dim(filePath)
-  );
-  await writeFile(filePath, JSON.stringify(config, null, 2));
+  try {
+    const filePath = [libraryPath, ...ServerConfigFilePath].join(path.sep);
+    logInfo('Writing server config: ', filePath);
+    await writeFile(filePath, JSON.stringify(config, null, 2));
+  } catch (error) {
+    logError(
+      'Error writing server config: ',
+      error,
+      `Config was: ${JSON.stringify(config, null, 2)}`
+    );
+  }
 };

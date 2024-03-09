@@ -1,4 +1,5 @@
 import { promises as fsPromises, constants } from 'fs';
+import { logError, logInfo, logWarn } from './logger';
 
 export const writeFile = async (filename: string, data: string) => {
   return await fsPromises.writeFile(filename, data, {
@@ -39,5 +40,31 @@ export const checkFilepath = async (filepath: string) => {
     return true;
   } catch (error) {
     return false;
+  }
+};
+
+export const copyDefaultDb = async (
+  targetPath: string,
+  attempts = 1
+): Promise<boolean> => {
+  const sourcePath = './prisma/dev.db';
+  const exists = await checkFilepath(targetPath);
+  if (exists) {
+    throw new Error('Target DB file already exists');
+  }
+  try {
+    await fsPromises.copyFile(sourcePath, targetPath);
+    logInfo('Copied devDb', `${sourcePath} => ${targetPath}`);
+    return true;
+  } catch (err: unknown) {
+    if (attempts > 3) {
+      logError('Failed to copy devDb', err);
+      return false;
+    }
+    logWarn(
+      'Failed to copy devDb, retrying #' + attempts,
+      `${sourcePath} => ${targetPath}`
+    );
+    return copyDefaultDb(targetPath, attempts + 1);
   }
 };
