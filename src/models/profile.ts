@@ -3,7 +3,19 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-export const findOrCreateProfile = async (name: Profile['name']) => {
+export const adminExists = async (): Promise<boolean> => {
+  const profiles = await prisma.profile.findMany({
+    where: {
+      admin: true,
+    },
+  });
+  return profiles.length > 0;
+};
+
+export const findOrCreateProfile = async (
+  name: Profile['name'],
+  admin?: Profile['admin']
+) => {
   const profile = await prisma.profile.findFirst({
     where: {
       name,
@@ -15,6 +27,7 @@ export const findOrCreateProfile = async (name: Profile['name']) => {
   return await prisma.profile.create({
     data: {
       name,
+      admin: admin || false,
     },
   });
 };

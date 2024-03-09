@@ -17,6 +17,7 @@ model Profile {
   updatedAt   DateTime      @updatedAt
   AuthAttempt AuthAttempt[]
   Session     Session[]
+  admin       Boolean       @default(false)
 }
 
 model Device {
